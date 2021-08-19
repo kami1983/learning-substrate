@@ -43,6 +43,14 @@ pub use sp_runtime::{Perbill, Permill};
 /// Import the template pallet.
 pub use pallet_template;
 
+/// Inclde pallet of my poe
+pub use pallet_poe;
+
+/// Configure the pallet-poe in pallets/poe.
+impl pallet_poe::Config for Runtime {
+	type Event = Event;
+}
+
 /// An index to a block.
 pub type BlockNumber = u32;
 
@@ -287,6 +295,8 @@ construct_runtime!(
 		Sudo: pallet_sudo::{Pallet, Call, Config<T>, Storage, Event<T>},
 		// Include the custom logic from the pallet-template in the runtime.
 		TemplateModule: pallet_template::{Pallet, Call, Storage, Event<T>},
+		// Add poe for my subject.
+		PoeModule: pallet_poe::{Pallet, Call, Storage, Event<T>},
 	}
 );
 
