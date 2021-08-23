@@ -46,9 +46,15 @@ pub use pallet_template;
 /// Inclde pallet of my poe
 pub use pallet_poe;
 
+parameter_types! {
+	// Define proof max length
+	pub const ProofMaxLength: u8 = 10;
+}
+
 /// Configure the pallet-poe in pallets/poe.
 impl pallet_poe::Config for Runtime {
 	type Event = Event;
+	type ProofMaxLength = ProofMaxLength;
 }
 
 /// An index to a block.
