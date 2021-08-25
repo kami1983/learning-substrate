@@ -3926,6 +3926,7 @@ dependencies = [
  "frame-benchmarking",
  "frame-support",
  "frame-system",
+ "pallet-randomness-collective-flip",
  "parity-scale-codec",
  "serde",
  "sp-core",

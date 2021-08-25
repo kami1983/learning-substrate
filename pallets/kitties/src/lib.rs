@@ -21,6 +21,8 @@ pub mod pallet {
 	use codec::{Encode, Decode};
 	use sp_io::hashing::blake2_128;
 	use sp_runtime::traits::Dispatchable;
+
+	// use sp_runtime::app_crypto::sp_core::blake2_128;
 	// use sp_core::hashing::blake2_128;
 
 	#[derive(Encode, Decode)]
@@ -37,13 +39,10 @@ pub mod pallet {
 		type Randomness: Randomness<Self::Hash, Self::BlockNumber>;
 	}
 
+
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
 	pub struct Pallet<T>(_);
-
-	#[pallet::storage]
-	#[pallet::getter(fn something)]
-	pub type Something<T> = StorageValue<_, u32>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn kitties_count)]
@@ -78,6 +77,7 @@ pub mod pallet {
 		#[pallet::weight(0)]
 		pub fn create(origin: OriginFor<T>) -> DispatchResult {
 			let who = ensure_signed(origin)?;
+
 			let kitty_id = match Self::kitties_count() {
 				Some(id) => {
 					ensure!(id != KittyIndex::max_value(), Error::<T>::KittiesCountOverflow) ;
@@ -87,12 +87,13 @@ pub mod pallet {
 					1
 				}
 			};
-			// 获取 dna
+			// // 获取 dna
 			let dna = Self::random_value(&who);
-			Kitties::<T>::insert(kitty_id, Some(Kitty(dna)));
-			Owner::<T>::insert(kitty_id, Some(who.clone()));
-			KittiesCount::<T>::put(kitty_id + 1);
-			Self::deposit_event(Event::KittyCreate(who, kitty_id));
+			// Kitties::<T>::insert(kitty_id, Some(Kitty(dna)));
+			// Owner::<T>::insert(kitty_id, Some(who.clone()));
+			// KittiesCount::<T>::put(kitty_id + 1);
+			// Self::deposit_event(Event::KittyCreate(who, kitty_id));
+
 			Ok(())
 		}
 
@@ -147,6 +148,7 @@ pub mod pallet {
 				&sender,
 				<frame_system::Pallet<T>>::extrinsic_index(),
 			);
+			// [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
 			payload.using_encoded(blake2_128)
 		}
 	}
