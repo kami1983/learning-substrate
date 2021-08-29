@@ -114,8 +114,8 @@ fn test_balance_total () {
 		assert_eq!(Balances::free_balance(3), 300);
 
 		// test lock
-		const ID_1: LockIdentifier = *b"1       ";
-		const ID_2: LockIdentifier = *b"2       ";
+		// const ID_1: LockIdentifier = *b"1       ";
+		// const ID_2: LockIdentifier = *b"2       ";
 
 		// TODO:: can not use this test funciton .
 		// <LockableCurrency<Balances>>::set_lock(ID_1, &1, 10, WithdrawReasons::all());
