@@ -84,7 +84,8 @@ pub mod pallet {
 		/// An example dispatchable that may throw a custom error.
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
 		pub fn cause_error(origin: OriginFor<T>) -> DispatchResult {
-			let _who = ensure_signed(origin)?;
+			// let _who = ensure_signed(origin)?;
+			ensure_none(origin)?;
 
 			// Read a value from storage.
 			match <Something<T>>::get() {

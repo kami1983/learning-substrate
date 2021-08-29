@@ -19,6 +19,8 @@ sp-core = {default-features = false, version = '4.0.0-dev', git = 'https://githu
 sp-io = {default-features = false, git = 'https://github.com/paritytech/substrate.git', tag = 'monthly-2021-08', version = '4.0.0-dev'}
 sp-runtime = {default-features = false, git = 'https://github.com/paritytech/substrate.git', tag = 'monthly-2021-08', version = '4.0.0-dev'}
 pallet-randomness-collective-flip = {default-features = false, git = 'https://github.com/paritytech/substrate.git', tag = 'monthly-2021-08', version = '4.0.0-dev'}
+sp-std = { version = "4.0.0-dev", default-features = false, git = 'https://github.com/paritytech/substrate.git', tag = 'monthly-2021-08' }
+pallet-balances = { version = "4.0.0-dev", git = 'https://github.com/paritytech/substrate.git', tag = 'monthly-2021-08' }
 
 [dependencies]
 codec = { default-features = false, features = ['derive'], package = 'parity-scale-codec', version = '2.0.0' }
@@ -27,11 +29,14 @@ frame-support = {default-features = false, git = 'https://github.com/paritytech/
 frame-system = {default-features = false, git = 'https://github.com/paritytech/substrate.git', tag = 'monthly-2021-08', version = '4.0.0-dev'}
 sp-io = { default-features = false, git = 'https://github.com/paritytech/substrate.git', tag = 'monthly-2021-08', version = '4.0.0-dev'}
 sp-runtime = {default-features = false, git = 'https://github.com/paritytech/substrate.git', tag = 'monthly-2021-08', version = '4.0.0-dev'}
+sp-std = { version = "4.0.0-dev", default-features = false, git = 'https://github.com/paritytech/substrate.git', tag = 'monthly-2021-08' }
+pallet-balances = { version = "4.0.0-dev", default-features = false, git = 'https://github.com/paritytech/substrate.git', tag = 'monthly-2021-08' }
 
 [features]
 default = ['std']
 runtime-benchmarks = ['frame-benchmarking']
 std = [
+    "sp-std/std",
     'codec/std',
     'frame-support/std',
     'frame-system/std',
