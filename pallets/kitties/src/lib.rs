@@ -79,7 +79,6 @@ pub mod pallet {
 	// type BalanceOf<T> = <T as pallet_balances::Config>::Balance;
 	type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
-
 	const MILLICENTS: u32 = 1_000_000_000;
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
@@ -97,7 +96,6 @@ pub mod pallet {
 		type MaxStakeBalance: Get<BalanceOf<Self>>;
 
 	}
-
 
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
@@ -125,6 +123,8 @@ pub mod pallet {
 	pub enum Event<T: Config> {
 		KittyCreate(T::AccountId, T::KittyIndex),
 		KittyTransfer(T::AccountId, T::AccountId, T::KittyIndex),
+		ToSellList(T::AccountId, T::KittyIndex),
+		MakeDeal(T::AccountId, T::AccountId, T::KittyIndex),
 	}
 
 	#[pallet::error]
@@ -226,10 +226,11 @@ pub mod pallet {
 					sell_list.remove(tmp_index);
 				}
 			}
-			// update or set new price .
-			sell_list.push((kitty_id,balance) );
-			SellList::<T>::insert(who, sell_list);
-
+			// update or set new price.
+			sell_list.push((kitty_id.clone(),balance));
+			SellList::<T>::insert(who.clone(), sell_list);
+			//
+			Self::deposit_event(Event::ToSellList(who, kitty_id));
 			Ok(())
 		}
 
@@ -251,7 +252,20 @@ pub mod pallet {
 							// TODO:: It should be judged that if the transmission fails, you need to refund the money.
 							// Un stake.
 							T::Currency::unreserve(&owner_id, T::MaxStakeBalance::get());
-							return Self::to_transfer(owner_id.clone(), who.clone(), kitty_id.clone());
+							let result = Self::to_transfer(owner_id.clone(), who.clone(), kitty_id.clone());
+							Self::deposit_event(Event::MakeDeal(who, owner_id.clone(), kitty_id));
+
+							// Clear sell list.
+							let mut sell_list = SellList::<T>::get(owner_id.clone()) ;
+							for (tmp_index, (tmp_kitty_id, _)) in sell_list.clone().iter().enumerate() {
+								if tmp_kitty_id == &kitty_id {
+									// Del old.
+									sell_list.remove(tmp_index);
+								}
+							}
+							SellList::<T>::insert(owner_id.clone(), sell_list);
+
+							return result;
 						}
 						Err(e) => {
 							return Err(e.error) ;
@@ -259,6 +273,7 @@ pub mod pallet {
 					}
 				}
 			}
+
 			// not exists on the list
 			if false == kitty_is_sold {return Err(Error::<T>::KittyHasNotSold)?}
 

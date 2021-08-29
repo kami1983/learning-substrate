@@ -2,6 +2,7 @@ use crate::{mock::*, Error};
 use frame_support::{assert_noop, assert_ok, traits::{LockIdentifier, WithdrawReasons, ReservableCurrency}};
 use serde::de::Unexpected::Option;
 use frame_support::traits::LockableCurrency;
+use frame_system::{EventRecord, Phase};
 
 #[test]
 fn test_create_kitties() {
@@ -18,6 +19,7 @@ fn test_create_kitties() {
 		assert_eq!(Kitties::owner(1), Some(1));
 		assert!(Kitties::kitties(1).is_some());
 
+		System::assert_has_event(Event::Kitties(crate::Event::<Test>::KittyCreate(1, 1)));
 
 	});
 }
@@ -27,8 +29,6 @@ fn test_transfer_kitties() {
 	new_test_ext().execute_with(|| {
 		setup_blocks(162);
 		assert_eq!(System::block_number(), 162);
-
-
 
 		const KITTY_ID_1:u32 = 1 ;
 		const ACCOUNT_ID_1:u64 = 1 ;
@@ -44,7 +44,6 @@ fn test_transfer_kitties() {
 		assert_eq!(Kitties::kitties_count(), Some(1));
 		// And owner is 1
 		assert_eq!(Kitties::owner(KITTY_ID_1), Some(ACCOUNT_ID_1));
-
 		// Transfer kitties. old owner transfer to new owner
 		assert_ok!(Kitties::transfer(Origin::signed(ACCOUNT_ID_1), ACCOUNT_ID_2, KITTY_ID_1));
 		// Test kitties owner.
@@ -54,6 +53,9 @@ fn test_transfer_kitties() {
 
 		// Sending mutilple times will cause an error because owner is changed.
 		assert_noop!(Kitties::transfer(Origin::signed(ACCOUNT_ID_1), ACCOUNT_ID_2, KITTY_ID_1), Error::<Test>::NotOwner);
+
+		// T::AccountId, T::AccountId, T::KittyIndex
+		System::assert_has_event(Event::Kitties(crate::Event::<Test>::KittyTransfer(ACCOUNT_ID_1, ACCOUNT_ID_2, KITTY_ID_1)));
 
 	});
 }
@@ -94,6 +96,10 @@ fn test_bread_kitties() {
 
 		// kitty 3 owner is Origin(3)
 		assert_eq!(Kitties::owner(KITTY_ID_3), Some(ACCOUNT_ID_3));
+
+		//
+		System::assert_has_event(Event::Kitties(crate::Event::<Test>::KittyCreate(ACCOUNT_ID_3, KITTY_ID_3)));
+
 	});
 }
 
@@ -111,41 +117,12 @@ fn test_balance_total () {
 		const ID_1: LockIdentifier = *b"1       ";
 		const ID_2: LockIdentifier = *b"2       ";
 
-		// <ReservableCurrency<Balances>>::reserve(&1,50);
-
-		// assert_ok!(Balances::reserve(&2, 450));
-
 		// TODO:: can not use this test funciton .
 		// <LockableCurrency<Balances>>::set_lock(ID_1, &1, 10, WithdrawReasons::all());
 		// // Balances::
 		// assert_eq!(Balances::free_balance(1), 90);
 	});
 }
-
-
-// #[test]
-// fn basic_locking_should_work() {
-// 	<$ext_builder>::default().existential_deposit(1).monied(true).build().execute_with(|| {
-// 		// TODO::断言后面的 10 哪儿来的？是余额，但是余额从哪儿设定的？
-// 		assert_eq!(Balances::free_balance(1), 10);
-// 		// TODO:: 锁定id-1，账户ID，余额9，
-// 		Balances::set_lock(ID_1, &1, 9, WithdrawReasons::all());
-// 		assert_noop!(
-// 					<Balances as Currency<_>>::transfer(&1, &2, 5, AllowDeath),
-// 					Error::<$test, _>::LiquidityRestrictions
-// 				);
-// 	});
-// }
-//
-// #[test]
-// fn account_should_be_reaped() {
-// 	<$ext_builder>::default().existential_deposit(1).monied(true).build().execute_with(|| {
-// 		assert_eq!(Balances::free_balance(1), 10);
-// 		assert_ok!(<Balances as Currency<_>>::transfer(&1, &2, 10, AllowDeath));
-// 		// Check that the account is dead.
-// 		assert!(!frame_system::Account::<Test>::contains_key(&1));
-// 	});
-// }
 
 #[test]
 fn test_kitty_sell_and_buy () {
@@ -180,6 +157,8 @@ fn test_kitty_sell_and_buy () {
 		// add KITTY_ID_2 to sell list.
 		assert_ok!(Kitties::to_sell(Origin::signed(ACCOUNT_ID_1), KITTY_ID_2, 230));
 
+		System::assert_has_event(Event::Kitties(crate::Event::<Test>::ToSellList(ACCOUNT_ID_1, KITTY_ID_2)));
+
 		// the query owner is still him.
 		assert_eq!(Kitties::owner(KITTY_ID_1), Some(ACCOUNT_ID_1));
 		assert_eq!(Kitties::owner(KITTY_ID_2), Some(ACCOUNT_ID_1));
@@ -192,7 +171,7 @@ fn test_kitty_sell_and_buy () {
 			assert_eq!(sell_kitty_id, KITTY_ID_2 );
 			assert_eq!(sell_balance, 230 );
 		} else {
-			assert!(false, "This is impossible.")
+			assert!(false, "This is impossible.");
 		}
 
 		// account_2 want to buy KITTY_ID_1, but KITTY_ID_1 has not sold yet.
@@ -212,6 +191,13 @@ fn test_kitty_sell_and_buy () {
 
 		// Unstake + income = 50 + 230
 		assert_eq!(Balances::free_balance(ACCOUNT_ID_1), (50 + 230));
+
+		System::assert_has_event(Event::Kitties(crate::Event::<Test>::MakeDeal(ACCOUNT_ID_3, ACCOUNT_ID_1, KITTY_ID_2)));
+		System::assert_has_event(Event::Kitties(crate::Event::<Test>::KittyTransfer(ACCOUNT_ID_1, ACCOUNT_ID_3, KITTY_ID_2)));
+
+		// The number of sell lists is empty
+		let mut sell_list = Kitties::sell_list(ACCOUNT_ID_1);
+		assert_eq!(sell_list.clone().len(), 0 , "Sell list is empty. ");
 
 	});
 }
