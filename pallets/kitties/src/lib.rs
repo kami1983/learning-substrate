@@ -145,15 +145,8 @@ pub mod pallet {
 			// stake some balance
 			T::Currency::reserve(&who, T::MaxStakeBalance::get());
 
-			let mut kitty_count = match Self::kitties_count() {
-				Some(id) => {
-					ensure!(id != u32::max_value(), Error::<T>::KittiesCountOverflow) ;
-					id
-				},
-				None => {
-					0
-				}
-			};
+			let mut kitty_count = Self::get_count_of_kitty();
+			ensure!(kitty_count != u32::max_value(), Error::<T>::KittiesCountOverflow) ;
 
 			// Add count
 			kitty_count += 1;
@@ -184,15 +177,9 @@ pub mod pallet {
 			let kitty1 = Self::kitties(kitty_id_1).ok_or(Error::<T>::InvalidKittyIndex)?;
 			let kitty2 = Self::kitties(kitty_id_2).ok_or(Error::<T>::InvalidKittyIndex)?;
 
-			let mut kitty_count = match Self::kitties_count() {
-				Some(id) => {
-					ensure!(id != u32::max_value(), Error::<T>::KittiesCountOverflow) ;
-					id
-				},
-				None => {
-					0
-				}
-			};
+
+			let mut kitty_count = Self::get_count_of_kitty();
+			ensure!(kitty_count != u32::max_value(), Error::<T>::KittiesCountOverflow) ;
 
 			let dna_1 = kitty1.0;
 			let dna_2 = kitty2.0;
@@ -298,6 +285,19 @@ pub mod pallet {
 			Owner::<T>::insert(kitty_id, Some(new_owner.clone()));
 			Self::deposit_event(Event::KittyTransfer(owner, new_owner, kitty_id));
 			Ok(())
+		}
+
+		pub fn get_count_of_kitty () -> u32
+		{
+			let mut kitty_count = match Self::kitties_count() {
+				Some(id) => {
+					id
+				},
+				None => {
+					0
+				}
+			};
+			kitty_count
 		}
 	}
 }
