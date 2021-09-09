@@ -33,6 +33,8 @@ use sp_runtime::{
 use sp_std::{collections::vec_deque::VecDeque, prelude::*, str};
 
 use serde::{Deserialize, Deserializer};
+use frame_support::sp_std::str::FromStr;
+
 
 /// Defines application identifier for crypto keys of this module.
 ///
@@ -284,6 +286,56 @@ struct GithubInfo {
 	public_repos: u32,
 }
 
+/**
+Example:
+{
+	"data": {
+		"id": "polkadot",
+		"rank": "10",
+		"symbol": "DOT",
+		"name": "Polkadot",
+		"supply": "1028068538.5689500000000000",
+		"maxSupply": null,
+		"marketCapUsd": "28465580367.6970634793593043",
+		"volumeUsd24Hr": "1346610126.5750374659937759",
+		"priceUsd": "27.6884072411364311",
+		"changePercent24Hr": "0.5268368449774714",
+		"vwap24Hr": "27.6695623833381634",
+		"explorer": "https://polkascan.io/polkadot"
+	},
+	"timestamp": 1631146070953
+}
+*/
+
+#[derive(Deserialize, Encode, Decode, Default)]
+struct DotPriceJson {
+	data: DotPriceData,
+	// #[serde(deserialize_with = "de_string_to_bytes")]
+	// data: Vec<u8>,
+}
+
+#[derive(Deserialize, Encode, Decode, Default)]
+struct DotPriceData {
+
+	#[serde(deserialize_with = "de_string_to_bytes")]
+	id: Vec<u8>, // "polkadot",
+	#[serde(deserialize_with = "de_string_to_bytes")]
+	rank: Vec<u8>, // "10",
+	#[serde(deserialize_with = "de_string_to_bytes")]
+	symbol: Vec<u8>, // "DOT",
+	#[serde(deserialize_with = "de_string_to_bytes")]
+	name: Vec<u8>,//"Polkadot",
+	// "supply": "1028068538.5689500000000000",
+	// "maxSupply": null,
+	// "marketCapUsd": "28465580367.6970634793593043",
+	// "volumeUsd24Hr": "1346610126.5750374659937759",
+	#[serde(deserialize_with = "de_string_to_bytes")]
+	priceUsd: Vec<u8>,//"27.6884072411364311",
+	// "changePercent24Hr": "0.5268368449774714",
+	// "vwap24Hr": "27.6695623833381634",
+	// "explorer": "https://polkascan.io/polkadot"
+}
+
 #[derive(Debug, Deserialize, Encode, Decode, Default)]
 struct IndexingData(Vec<u8>, u64);
 
@@ -336,6 +388,52 @@ impl<T: Config> Pallet<T> {
 		// [https://api.coincap.io/v2/assets/polkadot](https://api.coincap.io/v2/assets/polkadot)。
 
 		Ok(())
+	}
+
+	// decode json of dot price
+	fn parse_price_of_dot(json:&str) -> (u64, Permill) {
+
+		// let resp_str = json;
+		// // Print out our fetched JSON string
+		// println!("Parse json :: {:?}", resp_str);
+
+		// Print out our fetched JSON string
+		// println!("Parse json :: {:?}", json);
+
+		// Deserializing JSON to struct, thanks to `serde` and `serde_derive`
+		let dot_price: DotPriceJson =
+			serde_json::from_str(json).unwrap();
+
+		let price_usd = str::from_utf8(&dot_price.data.priceUsd).unwrap();
+		let price_split = price_usd.split('.');
+		let mut price_result = Vec::new();
+		for s in price_split.clone() {
+			price_result.push(s)
+		}
+
+		if price_result.len() != 2 {
+			panic!("Price split failed.")
+		}
+
+		// Extract 6-digit floating point longitude
+		price_result[1] = &price_result[1][0..6];
+
+		// println!("+++ = {:?}",price_result.clone());
+		// println!("priceUsd = {:?}", price_vec);
+
+
+		// let p1000_parts = Permill::from_parts(u32::from_str( price_result[1]).unwrap());
+		// let p1000_percent = Permill::from_percent(6812);
+		// let p1000_perthousand = Permill::from_perthousand(6812);
+		// println!("p1000_parts = {:?}, p1000_percent = {:?}, p1000_perthousand = {:?}",
+		// 		 p1000_parts, p1000_percent, p1000_perthousand);
+
+		// Integer
+		let int_num : u64 = u64::from_str( price_result[0]).unwrap();
+		// Decimal
+		let dec_num : u32 = u32::from_str( price_result[1]).unwrap();
+
+		(int_num, Permill::from_parts(dec_num))
 	}
 
 
