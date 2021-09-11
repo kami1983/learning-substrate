@@ -221,7 +221,7 @@ pub mod pallet {
 					if !SignedPayload::<T>::verify::<T::AuthorityId>(payload, signature.clone()) {
 						return InvalidTransaction::BadProof.into();
 					}
-					valid_tx(b"submit_number_unsigned_with_signed_payload".to_vec())
+					valid_tx(b"submit_price_unsigned_with_signed_payload".to_vec())
 				},
 				_ => InvalidTransaction::Call.into(),
 			}
