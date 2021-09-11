@@ -18,6 +18,8 @@
 use crate::*;
 use crate as demo_offchain_worker;
 use std::sync::Arc;
+use sp_arithmetic::per_things::Permill;
+
 // use codec::Decode;
 use frame_support::{assert_ok, parameter_types};
 use sp_core::{
@@ -147,15 +149,10 @@ fn test_submit_number_signed() {
 	t.register_extension(TransactionPoolExt::new(pool));
 	t.register_extension(KeystoreExt(Arc::new(keystore)));
 
-	// price_oracle_response(&mut offchain_state.write());
 	//
 	t.execute_with(|| {
 		let block_number: u64 = 51;
-		// set block number, try to call submit_number_signed on offchain worker
-		// setup_blocks(block_number);
-		// assert_eq!(System::block_number(), block_number);
 
-		// Call submit_number_signed submit current block_number on chain.
 		// this function will be called by offchain_worker.
 		DemoOcw::offchain_signed_tx(block_number).unwrap();
 
@@ -179,8 +176,6 @@ fn test_submit_number_unsigned() {
 	t.register_extension(TransactionPoolExt::new(pool));
 	t.register_extension(KeystoreExt(Arc::new(keystore)));
 
-	// price_oracle_response(&mut offchain_state.write());
-
 	t.execute_with(|| {
 		// when
 		DemoOcw::offchain_unsigned_tx(1).unwrap();
@@ -193,284 +188,149 @@ fn test_submit_number_unsigned() {
 	});
 }
 
-// Mock dot return data.
-fn get_dot_json() -> &'static str {
-	"{\"data\":{\"id\":\"polkadot\",\"rank\":\"10\",\"symbol\":\"DOT\",\"name\":\"Polkadot\",\"supply\":\"1028068538.5689500000000000\",\"maxSupply\":null,\"marketCapUsd\":\"28465580367.6970634793593043\",\"volumeUsd24Hr\":\"1346610126.5750374659937759\",\"priceUsd\":\"27.6884072411364311\",\"changePercent24Hr\":\"0.5268368449774714\",\"vwap24Hr\":\"27.6695623833381634\",\"explorer\":\"https://polkascan.io/polkadot\"},\"timestamp\":1631146070953}"
-}
-
-// Test price extract.
+// Test price extract, will decode json to (u64, Permill) struct
 #[test]
 fn parse_price_works() {
 	assert_eq!((27, Permill::from_parts(688407)), DemoOcw::parse_price_of_dot(get_dot_json()))
 }
 
-// #[test]
-// fn it_aggregates_the_price() {
-// 	sp_io::TestExternalities::default().execute_with(|| {
-// 		assert_eq!(Example::average_price(), None);
-//
-// 		assert_ok!(Example::submit_price(Origin::signed(Default::default()), 27));
-// 		assert_eq!(Example::average_price(), Some(27));
-//
-// 		assert_ok!(Example::submit_price(Origin::signed(Default::default()), 43));
-// 		assert_eq!(Example::average_price(), Some(35));
-// 	});
-// }
+// Test fetch price (fetch_price_info)
+#[test]
+fn test_fetch_price_by_http_request() {
 
-// #[test]
-// fn should_make_http_call_and_parse_result() {
-// 	let (offchain, state) = testing::TestOffchainExt::new();
-// 	let mut t = sp_io::TestExternalities::default();
-// 	t.register_extension(OffchainWorkerExt::new(offchain));
-//
-// 	price_oracle_response(&mut state.write());
-//
-// 	t.execute_with(|| {
-// 		// when
-// 		let price = Example::fetch_price().unwrap();
-// 		// then
-// 		assert_eq!(price, 15523);
-// 	});
-// }
+	let (offchain, state) = testing::TestOffchainExt::new();
+	let mut t = sp_io::TestExternalities::default();
+	t.register_extension(OffchainWorkerExt::new(offchain));
 
-// #[test]
-// fn knows_how_to_mock_several_http_calls() {
-// 	let (offchain, state) = testing::TestOffchainExt::new();
-// 	let mut t = sp_io::TestExternalities::default();
-// 	t.register_extension(OffchainWorkerExt::new(offchain));
-//
-// 	{
-// 		let mut state = state.write();
-// 		state.expect_request(testing::PendingRequest {
-// 			method: "GET".into(),
-// 			uri: "https://min-api.cryptocompare.com/data/price?fsym=BTC&tsyms=USD".into(),
-// 			response: Some(br#"{"USD": 1}"#.to_vec()),
-// 			sent: true,
-// 			..Default::default()
-// 		});
-//
-// 		state.expect_request(testing::PendingRequest {
-// 			method: "GET".into(),
-// 			uri: "https://min-api.cryptocompare.com/data/price?fsym=BTC&tsyms=USD".into(),
-// 			response: Some(br#"{"USD": 2}"#.to_vec()),
-// 			sent: true,
-// 			..Default::default()
-// 		});
-//
-// 		state.expect_request(testing::PendingRequest {
-// 			method: "GET".into(),
-// 			uri: "https://min-api.cryptocompare.com/data/price?fsym=BTC&tsyms=USD".into(),
-// 			response: Some(br#"{"USD": 3}"#.to_vec()),
-// 			sent: true,
-// 			..Default::default()
-// 		});
-// 	}
-//
-//
-// 	t.execute_with(|| {
-// 		let price1 = Example::fetch_price().unwrap();
-// 		let price2 = Example::fetch_price().unwrap();
-// 		let price3 = Example::fetch_price().unwrap();
-//
-// 		assert_eq!(price1, 100);
-// 		assert_eq!(price2, 200);
-// 		assert_eq!(price3, 300);
-// 	})
-//
-// }
+	price_http_response(&mut state.write());
 
-// #[test]
-// fn should_submit_signed_transaction_on_chain() {
-// 	const PHRASE: &str = "news slush supreme milk chapter athlete soap sausage put clutch what kitten";
-//
-// 	let (offchain, offchain_state) = testing::TestOffchainExt::new();
-// 	let (pool, pool_state) = testing::TestTransactionPoolExt::new();
-// 	let keystore = KeyStore::new();
-// 	SyncCryptoStore::sr25519_generate_new(
-// 		&keystore,
-// 		crate::crypto::Public::ID,
-// 		Some(&format!("{}/hunter1", PHRASE))
-// 	).unwrap();
-//
-//
-// 	let mut t = sp_io::TestExternalities::default();
-// 	t.register_extension(OffchainWorkerExt::new(offchain));
-// 	t.register_extension(TransactionPoolExt::new(pool));
-// 	t.register_extension(KeystoreExt(Arc::new(keystore)));
-//
-// 	price_oracle_response(&mut offchain_state.write());
-//
-// 	t.execute_with(|| {
-// 		// when
-// 		Example::fetch_price_and_send_signed().unwrap();
-// 		// then
-// 		let tx = pool_state.write().transactions.pop().unwrap();
-// 		assert!(pool_state.read().transactions.is_empty());
-// 		let tx = Extrinsic::decode(&mut &*tx).unwrap();
-// 		assert_eq!(tx.signature.unwrap().0, 0);
-// 		assert_eq!(tx.call, Call::Example(crate::Call::submit_price(15523)));
-// 	});
-// }
+	t.execute_with(|| {
+		// when
+		let body = DemoOcw::fetch_dot_price_by_http().unwrap();
+		let body_str = sp_std::str::from_utf8(&body);
+		// println!("body_str = {:?}", body_str);
+		// then body has been obtained.
+		assert_eq!(body_str, Ok(get_dot_json()));
+	});
+}
 
-// #[test]
-// fn should_submit_unsigned_transaction_on_chain_for_any_account() {
-// 	const PHRASE: &str = "news slush supreme milk chapter athlete soap sausage put clutch what kitten";
-// 	let (offchain, offchain_state) = testing::TestOffchainExt::new();
-// 	let (pool, pool_state) = testing::TestTransactionPoolExt::new();
-//
-// 	let keystore = KeyStore::new();
-//
-// 	SyncCryptoStore::sr25519_generate_new(
-// 		&keystore,
-// 		crate::crypto::Public::ID,
-// 		Some(&format!("{}/hunter1", PHRASE))
-// 	).unwrap();
-//
-// 	let public_key = SyncCryptoStore::sr25519_public_keys(&keystore, crate::crypto::Public::ID)
-// 		.get(0)
-// 		.unwrap()
-// 		.clone();
-//
-// 	let mut t = sp_io::TestExternalities::default();
-// 	t.register_extension(OffchainWorkerExt::new(offchain));
-// 	t.register_extension(TransactionPoolExt::new(pool));
-// 	t.register_extension(KeystoreExt(Arc::new(keystore)));
-//
-// 	price_oracle_response(&mut offchain_state.write());
-//
-// 	let price_payload = PricePayload {
-// 		block_number: 1,
-// 		price: 15523,
-// 		public: <Test as SigningTypes>::Public::from(public_key),
-// 	};
-//
-// 	// let signature = price_payload.sign::<crypto::TestAuthId>().unwrap();
-// 	t.execute_with(|| {
-// 		// when
-// 		Example::fetch_price_and_send_unsigned_for_any_account(1).unwrap();
-// 		// then
-// 		let tx = pool_state.write().transactions.pop().unwrap();
-// 		let tx = Extrinsic::decode(&mut &*tx).unwrap();
-// 		assert_eq!(tx.signature, None);
-// 		if let Call::Example(crate::Call::submit_price_unsigned_with_signed_payload(body, signature)) = tx.call {
-// 			assert_eq!(body, price_payload);
-//
-// 			let signature_valid = <PricePayload<
-// 				<Test as SigningTypes>::Public,
-// 				<Test as frame_system::Config>::BlockNumber
-// 					> as SignedPayload<Test>>::verify::<crypto::TestAuthId>(&price_payload, signature);
-//
-// 			assert!(signature_valid);
-// 		}
-// 	});
-// }
+#[test]
+fn test_price_data_on_the_chain() {
+	const PHRASE: &str = "news slush supreme milk chapter athlete soap sausage put clutch what kitten";
+	let (offchain, offchain_state) = testing::TestOffchainExt::new();
+	let (pool, pool_state) = testing::TestTransactionPoolExt::new();
+	let keystore = KeyStore::new();
+	SyncCryptoStore::sr25519_generate_new(
+		&keystore,
+		crate::crypto::Public::ID,
+		Some(&format!("{}/hunter1", PHRASE))
+	).unwrap();
 
-// #[test]
-// fn should_submit_unsigned_transaction_on_chain_for_all_accounts() {
-// 	const PHRASE: &str = "news slush supreme milk chapter athlete soap sausage put clutch what kitten";
-// 	let (offchain, offchain_state) = testing::TestOffchainExt::new();
-// 	let (pool, pool_state) = testing::TestTransactionPoolExt::new();
-//
-// 	let keystore = KeyStore::new();
-//
-// 	SyncCryptoStore::sr25519_generate_new(
-// 		&keystore,
-// 		crate::crypto::Public::ID,
-// 		Some(&format!("{}/hunter1", PHRASE))
-// 	).unwrap();
-//
-// 	let public_key = SyncCryptoStore::sr25519_public_keys(&keystore, crate::crypto::Public::ID)
-// 		.get(0)
-// 		.unwrap()
-// 		.clone();
-//
-// 	let mut t = sp_io::TestExternalities::default();
-// 	t.register_extension(OffchainWorkerExt::new(offchain));
-// 	t.register_extension(TransactionPoolExt::new(pool));
-// 	t.register_extension(KeystoreExt(Arc::new(keystore)));
-//
-// 	price_oracle_response(&mut offchain_state.write());
-//
-// 	let price_payload = PricePayload {
-// 		block_number: 1,
-// 		price: 15523,
-// 		public: <Test as SigningTypes>::Public::from(public_key),
-// 	};
-//
-// 	// let signature = price_payload.sign::<crypto::TestAuthId>().unwrap();
-// 	t.execute_with(|| {
-// 		// when
-// 		Example::fetch_price_and_send_unsigned_for_all_accounts(1).unwrap();
-// 		// then
-// 		let tx = pool_state.write().transactions.pop().unwrap();
-// 		let tx = Extrinsic::decode(&mut &*tx).unwrap();
-// 		assert_eq!(tx.signature, None);
-// 		if let Call::Example(crate::Call::submit_price_unsigned_with_signed_payload(body, signature)) = tx.call {
-// 			assert_eq!(body, price_payload);
-//
-// 			let signature_valid = <PricePayload<
-// 				<Test as SigningTypes>::Public,
-// 				<Test as frame_system::Config>::BlockNumber
-// 					> as SignedPayload<Test>>::verify::<crypto::TestAuthId>(&price_payload, signature);
-//
-// 			assert!(signature_valid);
-// 		}
-// 	});
-// }
+	let public_key = SyncCryptoStore::sr25519_public_keys(&keystore, crate::crypto::Public::ID)
+		.get(0)
+		.unwrap()
+		.clone();
 
-// #[test]
-// fn should_submit_raw_unsigned_transaction_on_chain() {
-// 	let (offchain, offchain_state) = testing::TestOffchainExt::new();
-// 	let (pool, pool_state) = testing::TestTransactionPoolExt::new();
-//
-// 	let keystore = KeyStore::new();
-//
-// 	let mut t = sp_io::TestExternalities::default();
-// 	t.register_extension(OffchainWorkerExt::new(offchain));
-// 	t.register_extension(TransactionPoolExt::new(pool));
-// 	t.register_extension(KeystoreExt(Arc::new(keystore)));
-//
-// 	price_oracle_response(&mut offchain_state.write());
-//
-// 	t.execute_with(|| {
-// 		// when
-// 		Example::fetch_price_and_send_raw_unsigned(1).unwrap();
-// 		// then
-// 		let tx = pool_state.write().transactions.pop().unwrap();
-// 		assert!(pool_state.read().transactions.is_empty());
-// 		let tx = Extrinsic::decode(&mut &*tx).unwrap();
-// 		assert_eq!(tx.signature, None);
-// 		assert_eq!(tx.call, Call::Example(crate::Call::submit_price_unsigned(1, 15523)));
-// 	});
-// }
+	let mut t = sp_io::TestExternalities::default();
+	t.register_extension(OffchainWorkerExt::new(offchain));
+	t.register_extension(TransactionPoolExt::new(pool));
+	t.register_extension(KeystoreExt(Arc::new(keystore)));
 
-// fn price_oracle_response(state: &mut testing::OffchainState) {
-// 	state.expect_request(testing::PendingRequest {
-// 		method: "GET".into(),
-// 		uri: "https://min-api.cryptocompare.com/data/price?fsym=BTC&tsyms=USD".into(),
-// 		response: Some(br#"{"USD": 155.23}"#.to_vec()),
-// 		sent: true,
-// 		..Default::default()
-// 	});
-// }
+	price_http_response(&mut offchain_state.write());
 
-// #[test]
-// fn parse_price_works() {
-// 	let test_data = vec![
-// 		("{\"USD\":6536.92}", Some(653692)),
-// 		("{\"USD\":65.92}", Some(6592)),
-// 		("{\"USD\":6536.924565}", Some(653692)),
-// 		("{\"USD\":6536}", Some(653600)),
-// 		("{\"USD2\":6536}", None),
-// 		("{\"USD\":\"6432\"}", None),
-// 	];
-//
-// 	for (json, expected) in test_data {
-// 		assert_eq!(expected, Example::parse_price(json));
-// 	}
-// }
+	let price_payload = PricePayload {
+		price_cell: (27, Permill::from_parts(688407)),
+		public: <Test as SigningTypes>::Public::from(public_key),
+	};
+
+	// let signature = price_payload.sign::<crypto::TestAuthId>().unwrap();
+	t.execute_with(|| {
+		// when
+		DemoOcw::fetch_price_info().unwrap();
+		// then
+		let tx = pool_state.write().transactions.pop().unwrap();
+		let tx = Extrinsic::decode(&mut &*tx).unwrap();
+		assert_eq!(tx.signature, None);
+		if let Call::DemoOcw(crate::Call::submit_price_unsigned_with_signed_payload(body, signature)) = tx.call {
+			// assert payload struct is what we want.
+			assert_eq!(body, price_payload);
+			// assert signature is right.
+			let signature_valid = <PricePayload<
+				<Test as SigningTypes>::Public
+			> as SignedPayload<Test>>::verify::<crypto::TestAuthId>(&price_payload, signature);
+			// be fine.
+			assert!(signature_valid);
+		}
+	});
+}
+
+#[test]
+fn test_10_price_stored_cycles() {
+	const PHRASE: &str = "news slush supreme milk chapter athlete soap sausage put clutch what kitten";
+	let (offchain, offchain_state) = testing::TestOffchainExt::new();
+	let (pool, pool_state) = testing::TestTransactionPoolExt::new();
+	let keystore = KeyStore::new();
+	SyncCryptoStore::sr25519_generate_new(
+		&keystore,
+		crate::crypto::Public::ID,
+		Some(&format!("{}/hunter1", PHRASE))
+	).unwrap();
+
+	let mut t = sp_io::TestExternalities::default();
+	t.register_extension(OffchainWorkerExt::new(offchain));
+	t.register_extension(TransactionPoolExt::new(pool));
+	t.register_extension(KeystoreExt(Arc::new(keystore)));
+
+	// let signature = price_payload.sign::<crypto::TestAuthId>().unwrap();
+	t.execute_with(|| {
+
+		// when insert 11 price
+		DemoOcw::append_dot_price_by_round((1,Permill::from_parts(1)));
+		DemoOcw::append_dot_price_by_round((2,Permill::from_parts(2)));
+		DemoOcw::append_dot_price_by_round((3,Permill::from_parts(3)));
+		DemoOcw::append_dot_price_by_round((4,Permill::from_parts(4)));
+		DemoOcw::append_dot_price_by_round((5,Permill::from_parts(5)));
+		DemoOcw::append_dot_price_by_round((6,Permill::from_parts(6)));
+		DemoOcw::append_dot_price_by_round((7,Permill::from_parts(7)));
+		DemoOcw::append_dot_price_by_round((8,Permill::from_parts(8)));
+		DemoOcw::append_dot_price_by_round((9,Permill::from_parts(9)));
+		DemoOcw::append_dot_price_by_round((10,Permill::from_parts(10)));
+		DemoOcw::append_dot_price_by_round((11,Permill::from_parts(11)));
+
+		// get price queue list.
+		let mut price_deque = DemoOcw::prices();
+		assert_eq!(price_deque.len(), 10, "10 store loops, so there are only 10 elements at most.");
+
+		// The for loop starts at 2 because 1 has been kicked out.
+		for i in 2..12u64 {
+			let assert_price = (i,Permill::from_parts(i.try_into().unwrap()));
+			// assert_eq!(assert_price, price_deque[(i-2) as usize], "");
+			assert_eq!(assert_price, price_deque.pop_front().unwrap(),"The element of the first element starts from 2.");
+		}
+
+		// After the assertion, the circular list is empty and all assertions are made.
+		assert_eq!(price_deque.len(), 0, "All assertions are made.");
+
+	});
+}
 
 
+fn price_http_response(state: &mut testing::OffchainState) {
+	let headers:Vec<(String, String)> = vec![("User-Agent".to_string(), HTTP_DOT_PRICE_HEADER_USER_AGENT.to_string())];
+	state.expect_request(testing::PendingRequest {
+		method: "GET".into(),
+		headers,
+		uri: "https://api.coincap.io/v2/assets/polkadot".into(),
+		response: Some(get_dot_json().as_bytes().to_vec()),
+		sent: true,
+		..Default::default()
+	});
+}
+
+// Mock dot return data.
+fn get_dot_json() -> &'static str {
+	"{\"data\":{\"id\":\"polkadot\",\"rank\":\"10\",\"symbol\":\"DOT\",\"name\":\"Polkadot\",\"supply\":\"1028068538.5689500000000000\",\"maxSupply\":null,\"marketCapUsd\":\"28465580367.6970634793593043\",\"volumeUsd24Hr\":\"1346610126.5750374659937759\",\"priceUsd\":\"27.6884072411364311\",\"changePercent24Hr\":\"0.5268368449774714\",\"vwap24Hr\":\"27.6695623833381634\",\"explorer\":\"https://polkascan.io/polkadot\"},\"timestamp\":1631146070953}"
+}
 
 fn setup_blocks(blocks: u64) {
 	let mut parent_hash = System::parent_hash();
