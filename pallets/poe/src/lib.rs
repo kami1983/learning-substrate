@@ -16,6 +16,8 @@ mod tests;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
+pub mod weights;
+
 // pub const PROOF_MAX_LENGTH: u8 = 10;
 //
 //
@@ -28,15 +30,16 @@ pub mod pallet {
 	use frame_support::{dispatch::DispatchResult, pallet_prelude::*};
 	use frame_system::pallet_prelude::*;
 	use sp_std::vec::Vec;
+	pub use crate::weights::WeightInfo;
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
 		/// Because this pallet emits events, it depends on the runtime's definition of an event.
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
-
 		type ProofMaxLength : Get<u8>;
-
+		/// Information on runtime weights.
+		type WeightInfo: WeightInfo;
 	}
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
@@ -75,7 +78,8 @@ pub mod pallet {
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 
-		#[pallet::weight(0)]
+		// #[pallet::weight(0)]
+		#[pallet::weight(T::WeightInfo::create_claim())]
 		pub fn create_claim(origin: OriginFor<T>, claim: Vec<u8>) -> DispatchResult {
 			// Check clain lenth
 			ensure!(claim.len() <= T::ProofMaxLength::get().into() , Error::<T>::ProofLengthTooLong);
@@ -87,7 +91,8 @@ pub mod pallet {
 			Ok(().into())
 		}
 
-		#[pallet::weight(0)]
+		// #[pallet::weight(0)]
+		#[pallet::weight(T::WeightInfo::revoke_claim())]
 		pub fn revoke_claim(origin: OriginFor<T>, claim: Vec<u8>) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
 			let (owner,_) = Proofs::<T>::get(&claim).ok_or(Error::<T>::ClaimNotExist)?;
@@ -97,7 +102,8 @@ pub mod pallet {
 			Ok(().into())
 		}
 
-		#[pallet::weight(0)]
+		// #[pallet::weight(0)]
+		#[pallet::weight(T::WeightInfo::transfer_claim())]
 		pub fn transfer_claim(origin: OriginFor<T>, claim: Vec<u8>, dest: T::AccountId) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
 			let(owner, _block_number) = Proofs::<T>::get(&claim).ok_or(Error::<T>::ClaimNotExist)?;

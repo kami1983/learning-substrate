@@ -33,6 +33,8 @@ sp-io = { git = 'https://github.com/paritytech/substrate.git', tag = 'monthly-20
 sp-runtime = { git = 'https://github.com/paritytech/substrate.git', tag = 'monthly-2021-08', version = '4.0.0-dev', default-features = false }
 sp-std = { git = 'https://github.com/paritytech/substrate.git', tag = 'monthly-2021-08', version = '4.0.0-dev', default-features = false }
 sp-arithmetic = { git = 'https://github.com/paritytech/substrate.git', tag = 'monthly-2021-08', version = '4.0.0-dev', default-features = false }
+sp-application-crypto = { git = 'https://github.com/paritytech/substrate.git', tag = 'monthly-2021-08', version = '4.0.0-dev', default-features = false }
+
 
 [features]
 default = ['std']
@@ -41,10 +43,12 @@ std = [
 	'frame-system/std',
 	'parity-scale-codec/std',
 	'sp-io/std',
+	'sp-core/std',
 	'sp-runtime/std',
 	'sp-std/std',
 	'sp-arithmetic/std',
 	'log/std',
+	'sp-application-crypto/std',
 	'sp-keystore/std'
 ]
 try-runtime = ["frame-support/try-runtime"]

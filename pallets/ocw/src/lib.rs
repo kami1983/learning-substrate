@@ -68,7 +68,8 @@ const LOCK_BLOCK_EXPIRATION: u32 = 3; // in block number
 pub mod crypto {
 	use crate::KEY_TYPE;
 	use sp_core::sr25519::Signature as Sr25519Signature;
-	use sp_runtime::app_crypto::{app_crypto, sr25519};
+	// use sp_runtime::app_crypto::{app_crypto, sr25519};
+	use sp_application_crypto::{app_crypto, sr25519};
 	use sp_runtime::{traits::Verify, MultiSignature, MultiSigner};
 
 	app_crypto!(sr25519, KEY_TYPE);
